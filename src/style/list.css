@@ -1,0 +1,95 @@
+.finish {
+    text-decoration: line-through;
+}
+.hidden{
+    visibility: hidden;
+    position: absolute;
+    z-index: 1000;
+    font-size: 0.5em;
+    padding-inline-start: 1em;
+    margin: 0;
+    color: #3459c1;
+}
+
+.baseAdd.addTask {
+    box-shadow: 0 -17px 0 -16px #e5e5e5;
+}
+
+.baseAdd.addTask .baseAdd-input::placeholder {
+    color: #3459c1
+}
+
+.baseAdd-input {
+    outline: none;
+    border: 0;
+}
+.baseAdd-input:focus{
+    color: #3459c1;
+    outline: auto;
+    border: 4px;
+}
+
+.baseAdd.addTask .baseAdd-icon .icon {
+    color: #3459c1
+}
+.baseAdd.addTask .baseAdd-icon .icon .checkbox-22 svg {
+    fill: #d3d3d3
+}
+
+ .baseAdd.addTask .baseAdd-icon .icon .add-20 svg {
+    fill: #3459c1
+}
+
+.baseAdd.addTask {
+    box-shadow: 0 17px 0 -16px #e5e5e5;
+    padding: 0 13px
+}
+
+.baseAdd.addTask.focused {
+    box-shadow: 0 17px 0 -16px #767678
+}
+
+.baseAdd.addTask.focused {
+    box-shadow: 0 17px 0 -16px #3e69e4
+}
+
+
+
+.baseAdd.addTask .baseAdd-icon:after {
+    display: none;
+    position: fixed;
+    left: 50%;
+    bottom: 26px;
+    margin-left: -26px;
+    border-radius: 26px;
+    width: 52px;
+    height: 52px;
+    font-family: 'wundercon';
+    content: '\E710';
+    color: white;
+    line-height: 52px;
+    font-size: 20px;
+    background-color: #767678;
+    box-shadow: 0 3px 3px rgba(0, 0, 0, 0.3);
+    z-index: 2
+}
+
+.baseAdd.addTask .baseAdd-icon:after {
+    background-color: #3e69e4
+}
+
+
+
+
+
+
+
+
+
+.baseAdd.addTask .baseAdd-icon:after {
+    display: block
+}
+
+.baseAdd.addTask.focused .baseAdd-icon:after {
+    display: none
+}
