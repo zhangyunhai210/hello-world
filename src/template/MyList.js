@@ -54,7 +54,6 @@ export class MyLists extends Component {
         this.state = {
             Lists: props.data.todo,
             addValue: '',
-            listenerFnc : ()=>{},
         }
         this.listenerFnc = ()=>{}
     }
