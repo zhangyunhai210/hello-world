@@ -1,72 +1,116 @@
-interface List {
-    id: Number,
-    isFinish: Boolean,
-    context: string,
+export type IIndexDb = {
+  dbName: string
+  version: number
+  tables: DbTable[]
+}
+export type DbTable = {
+  tableName: string
+  option?: IDBObjectStoreParameters
+  indexs: DbIndex[]
+}
+export type DbIndex = {
+  key: string
+  option?: IDBIndexParameters
+}
+export interface DbOperate<T> {
+  tableName: string
+  key: string,
+  data: T | T[]
+  value: string | number
+  condition(data: T): boolean
+  success(res: T[] | T): void
+  handle(res: T): void
 }
 
-interface Lists {
-    id: Number,
-    todoList: Array<List>
-}
+export class TsIndexDb {
+  private dbName: string = ''
+  private version: number = 1
+  private tableList: DbTable[] = []
+  private db: IDBDatabase | null = null
+  constructor({ dbName, version, tables }: IIndexDb) {
+    this.dbName = dbName
+    this.version = version
+    this.tableList = tables
+  }
 
-interface todoLists {
-    lists: Array<Lists>
-}
-
-interface returnTodoLists<T> {
-    code: Number,
-    message: String,
-    data: T,
-}
-function openDb(dbName: string){
-    console.log(`${new Date().toTimeString()} open ${dbName}-------`);
-    let req = indexedDB.open(dbName)
-    req.onerror = (e)=>{
-        console.error(`${dbName} error: ${e.target.errorCode}`)
+  private static _instance: TsIndexDb | null = null
+  public static getInstance(dbOptions?: IIndexDb): TsIndexDb | null {
+    if (TsIndexDb._instance === null && dbOptions) {
+      TsIndexDb._instance = new TsIndexDb(dbOptions)
     }
-    
+    return TsIndexDb._instance
+  }
+  /**
+   * @method 查询某张表的所有数据(返回具体数组)
+   * @param {Object}
+   * @property {String} tableName 表名
+   */
+  queryAll<T>({ tableName }: Pick<DbOperate<T>, 'tableName'>) {
+    let res: T[] = []
+    return this.commitDb<T[]>(tableName, (transaction: IDBObjectStore) => transaction.openCursor(), 'readOnly', (e: any, resolve: (data: T[]) => void) => {
+      this.cursor_success(e, {
+        condition: () => true,
+        handler: ({ currentValue }: any) => res.push(currentValue),
+        success: () => resolve(res)
+      })
+    })
+  }
+  /**
+    * @method 游标开启成功,遍历游标
+    * @param {Function} 条件
+    * @param {Function} 满足条件的处理方式 @arg {Object} @property cursor游标 @property currentValue当前值
+    * @param {Function} 游标遍历完执行的方法
+    * @return {Null}
+    * */
+  cursor_success(e: any, { condition, handler, success }: any) {
+    const cursor: IDBCursorWithValue = e.target.result;
+    if (cursor) {
+      const currentValue = cursor.value;
+      if (condition(currentValue)) handler({ cursor, currentValue });
+      cursor.continue();
+    } else {
+      success();
+    }
+  }
+  /**
+ * 提交Db请求
+ * @param tableName  表名
+ * @param commit 提交具体函数
+ * @param mode 事物方式
+ * @param backF 游标方法
+ */
+  private commitDb<T>(tableName: string,
+    commit?: (transaction: IDBObjectStore) => IDBRequest<any>,
+    mode: IDBTransactionMode = 'readwrite',
+    backF?: (request: any, resolve: any, store: IDBObjectStore) => void) {
+    return new Promise<T>((resolve, reject) => {
+      try {
+        if (this.db) {
+          let store = this.db.transaction(tableName, mode).objectStore(tableName);
+          if (!commit) {
+            backF!(null, resolve, store)
+            return
+          }
+          let res = commit(store)
+          res!.onsuccess = (e: any) => {
+            if (backF) {
+              backF(e, resolve, store)
+            } else {
+              resolve(e)
+            }
+          }
+          res!.onerror = (event) => {
+            reject(event)
+          }
+
+        } else {
+          reject(new Error('请开启数据库'))
+        }
+      } catch (error) {
+        reject(error)
+      }
+
+    })
+  }
+
 }
-
-function addTransaction(addAgr:string){
-
-}
-
-export {}
-
-// function getTodoLists(): returnTodoLists<todoLists> {
-//     let returnData = null
-
-//     return returnData
-// }
-// function getLists(key: string): returnTodoLists<Lists> {
-//     let returnData = null
-
-//     return returnData
-// }
-// function getList(key?: string, dbName?: string): returnTodoLists<List> {
-//     let returnData = null
-
-
-//     return returnData
-// }
-
-// function setTodoList() {
-
-// }
-
-// function deleteTodoList() {
-
-// }
-
-// function addTodoList() {
-
-// }
-// export default transaction = {
-//     getAll: getTodoLists,
-//     getLists: getLists,
-//     getList: getList,
-//     set: setTodoList,
-//     delete: deleteTodoList,
-//     add: addTodoList
-// }
-

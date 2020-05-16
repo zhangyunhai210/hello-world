@@ -1,4 +1,5 @@
 # a todo list for React
+Please use yarn
 # TODO
 - [x] complete main function
 - [ ] css
