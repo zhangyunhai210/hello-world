@@ -40,21 +40,7 @@ export class TsIndexDb {
     }
     return TsIndexDb._instance
   }
-  /**
-   * @method 查询某张表的所有数据(返回具体数组)
-   * @param {Object}
-   * @property {String} tableName 表名
-   */
-  queryAll<T>({ tableName }: Pick<DbOperate<T>, 'tableName'>) {
-    let res: T[] = []
-    return this.commitDb<T[]>(tableName, (transaction: IDBObjectStore) => transaction.openCursor(), 'readOnly', (e: any, resolve: (data: T[]) => void) => {
-      this.cursor_success(e, {
-        condition: () => true,
-        handler: ({ currentValue }: any) => res.push(currentValue),
-        success: () => resolve(res)
-      })
-    })
-  }
+
   /**
     * @method 游标开启成功,遍历游标
     * @param {Function} 条件
@@ -66,7 +52,9 @@ export class TsIndexDb {
     const cursor: IDBCursorWithValue = e.target.result;
     if (cursor) {
       const currentValue = cursor.value;
-      if (condition(currentValue)) handler({ cursor, currentValue });
+      if (condition(currentValue)) {
+        handler({ cursor, currentValue });
+      }
       cursor.continue();
     } else {
       success();
@@ -82,7 +70,8 @@ export class TsIndexDb {
   private commitDb<T>(tableName: string,
     commit?: (transaction: IDBObjectStore) => IDBRequest<any>,
     mode: IDBTransactionMode = 'readwrite',
-    backF?: (request: any, resolve: any, store: IDBObjectStore) => void) {
+    backF?: (request: any, resolve: any, store: IDBObjectStore) => void
+    ) {
     return new Promise<T>((resolve, reject) => {
       try {
         if (this.db) {
@@ -111,6 +100,94 @@ export class TsIndexDb {
       }
 
     })
+  } 
+  /**
+   * @method 查询某张表的所有数据(返回具体数组)
+   * @param {Object}
+   * @property {String} tableName 表名
+   */
+  queryAll<T>({ tableName }: Pick<DbOperate<T>, 'tableName'>) {
+    let res: T[] = []
+    return this.commitDb<T[]>(tableName, (transaction: IDBObjectStore) => transaction.openCursor(), 'readonly', (e: any, resolve: (data: T[]) => void) => {
+      this.cursor_success(e, {
+        condition: () => true,
+        handler: ({ currentValue }: any) => res.push(currentValue),
+        success: () => resolve(res)
+      })
+    })
   }
+  /**
+   * @method 查询(返回具体数组)
+   * @param {Object}
+   *   @property {String} tableName 表名
+   *   @property {Function} condition 查询的条件
+   * */
+  query<T>({ tableName, condition }: Pick<DbOperate<T>, 'condition' | 'tableName'>) {
+    let res: T[] = []
+    return this.commitDb<T[]>(tableName, (transaction: IDBObjectStore) => transaction.openCursor(), 'readonly', (e:any, resolve: (data: T[]) => void) =>{
+      this.cursor_success(e, {
+        condition,
+        handler: ({currentValue}: any) => res.push(currentValue),
+        success: () => resolve(res)
+      })
+    })
+  }
+  /**
+   * @method 查询数据（主键值）
+   * @param {Object}
+   *   @property {String} tableName 表名
+   *   @property {Number|String} value 主键值
+   *
+   * */
+  query_by_primaryKey<T>({tableName, value}: Pick<DbOperate<T>, 'tableName' | 'value'>) {
+    return this.commitDb<T>(tableName, (transaction: IDBObjectStore) => transaction.get(value), 'readonly', (e:any, resolve: (data:T)=> void) => {
+      resolve(e.target.result||null)
+    })
+  }
+  /**
+   * @method 修改数据(返回修改的数组)
+   * @param {Object}
+   *   @property {String} tableName 表名
+   *   @property {Function} condition 查询的条件，遍历，与filter类似
+   *      @arg {Object} 每个元素
+   *      @return 条件
+   *   @property {Function} handle 处理函数，接收本条数据的引用，对其修改
+   * */
+  updata<T>({tableName, condition, handle}:Pick<DbOperate<T>, 'tableName' | 'condition' | 'handle'>) {
+    let res: T[] = []
+    return this.commitDb<T>(tableName, (transaction: IDBObjectStore) => transaction.openCursor(), 'readwrite', (e:any, resolve:(data: T[]) => void) => {
+      this.cursor_success(e, {
+        condition,
+        handler: ({currentValue, cursor}: any) => {
+          handle(currentValue)
+          res.push(currentValue)
+          cursor.updata(currentValue)
+        },
+        success: () => {
+          resolve(res)
+        }
+      })
+    })
+  }
+  /**
+  * @method 修改某条数据(主键)返回修改的对象
+  * @param {Object}
+  *   @property {String} tableName 表名
+  *   @property {String\|Number} value 目标主键值
+  *   @property {Function} handle 处理函数，接收本条数据的引用，对其修改
+  * */
+  updata_by_primaryKey<T>({tableName, value, handle}: Pick<DbOperate<T>, 'tableName' | 'value' | 'handle'>) {
+    return this.commitDb<T>(tableName, (transaction: IDBObjectStore) => transaction.get(value), 'readwrite', (e:any, resolve: (data: T | null) => void, store: IDBObjectStore) => {
+      const currentValue = e.target.result
+      if(!currentValue) {
+        resolve(null)
+        return false
+      }
+      handle(currentValue)
+      store.put(currentValue)
+      resolve(currentValue)
+    })
+  }
+  
 
 }
