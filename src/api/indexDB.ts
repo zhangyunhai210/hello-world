@@ -188,6 +188,14 @@ export class TsIndexDb {
       resolve(currentValue)
     })
   }
+
+  insert<T>({tableName, data }: Pick<DbOperate<T>, 'tableName' | 'data'>) {
+    return this.commitDb<T>(tableName, undefined, 'readwrite', 
+    (_: any, resolve: () => void, store: IDBObjectStore) => {
+      data instanceof Array? data.forEach( v => store.put(v)) : store.put(data)
+      resolve()
+    })
+  }
   
 
 }
