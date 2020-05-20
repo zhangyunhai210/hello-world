@@ -196,6 +196,22 @@ export class TsIndexDb {
       resolve()
     })
   }
+
+  delete<T>({tableName, condition}: Pick<DbOperate<T>, 'tableName' | 'condition'>) {
+    let res: T[] = []
+    return this.commitDb(tableName, (transaction: IDBObjectStore) => transaction.openCursor(), 'readwrite', (e: any, resolve: (data:T[]) => void) => {
+      this.cursor_success(e, {
+        condition,
+        handler: ({ currentValue, cursor}: any) => {
+          res.push(currentValue)
+          cursor.delete()
+        },
+        success: () => {
+          resolve(res)
+        }
+      })
+    })
+  }
   
 
 }
